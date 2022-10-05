@@ -2,12 +2,23 @@ Genelist <- c(
   paste0("Sirt",1:7)
 )
 
-seu.mouse <- readRDS("./")
+seu.mouse <- readRDS("/public/processed/seu.mouse-1025.rds")
+seu.mouse$Res <- ifelse(seu.mouse$mouse %in% c("Mouse1", "Mouse2"), "Sensitive", "Resistant")
+
+saveRDS(seu.mouse, "./patrick/mouse/seu.mouse-1025.051022.rds")
+
+
+seu.mouse.tumor <- subset(seu.mouse, subset = anno1 == "Tumor")
+
+# The data has not been normalized before.
+seu.mouse.tumor <- NormalizeData(seu.mouse.tumor)
+
+VlnPlot(seu.mouse.tumor, features = c("Sirt1"), split.by = "Res")
 
 for(gene in Genelist){
   message(gene)
-  x <- as.vector(seu.mouse@assays$RNA@data[gene,])
-  Res <- as.vector(seu.mouse$Res)
+  x <- as.vector(seu.mouse.tumor@assays$RNA@data[gene,])
+  Res <- as.vector(seu.mouse.tumor$Res)
   df <- data.frame(Res = Res, x = x)
   p <- ggplot(df,aes(x=Res, y=x, color=Res)) +
     geom_jitter(width = 0.1, size = 1, alpha = 0.8) +
@@ -28,9 +39,10 @@ for(gene in Genelist){
 
 # statistic
 for(gene in Genelist){
-  x <- seu.mouse@assays$RNA@data[gene,seu.mouse@meta.data$Res == "Responder"]
-  y <- seu.mouse@assays$RNA@data[gene,seu.mouse@meta.data$Res == "Non-responder"]
-  mean(x)
-  mean(y)
-  wilcox.test(x,y)
+  x <- seu.mouse.tumor@assays$RNA@data[gene,seu.mouse.tumor@meta.data$Res == "Sensitive"]
+  y <- seu.mouse.tumor@assays$RNA@data[gene,seu.mouse.tumor@meta.data$Res == "Resistant"]
+  message(mean(x))
+  message(mean(y))
+  wil <- wilcox.test(x,y)
+  print(wil)
 }
